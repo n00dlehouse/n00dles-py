@@ -13,7 +13,7 @@ from .retry import RetryPolicy
 
 if TYPE_CHECKING:
     from ..providers.base import BaseProvider
-    from .pipeline import Pipeline
+    from .pipeline import ParallelGroup, Pipeline, PipelineNode
 
 
 @dataclass
@@ -79,12 +79,18 @@ class AgentNode:
     def effective_retry(self) -> RetryPolicy:
         return self.retry if self.retry is not None else self.DEFAULT_RETRY
 
-    def __rshift__(self, other: AgentNode | Pipeline) -> Pipeline:
+    def __rshift__(self, other: PipelineNode | Pipeline) -> Pipeline:
         from .pipeline import Pipeline
 
         if isinstance(other, Pipeline):
             return Pipeline([self, *other.nodes])
         return Pipeline([self, other])
+
+    def __or__(self, other: AgentNode | ParallelGroup) -> ParallelGroup:
+        from .pipeline import ParallelGroup
+
+        other_nodes = other.nodes if isinstance(other, ParallelGroup) else [other]
+        return ParallelGroup([self, *other_nodes])
 
     def __repr__(self) -> str:
         return f"AgentNode({self.name!r}, model={self.model!r})"

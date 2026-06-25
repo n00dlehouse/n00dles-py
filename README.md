@@ -1,5 +1,7 @@
 # n00dles 🍜
 
+[![PyPI](https://img.shields.io/pypi/v/get-n00dles.svg)](https://pypi.org/project/get-n00dles/)
+
 Open-source multi-agent AI orchestration. Chain agents, manage state, handle
 failures — without 800 lines of boilerplate.
 
@@ -88,21 +90,57 @@ configure(state_store="sqlite:///my_app.db")   # custom path (default: ./n00dles
 configure(trace_exporter="otel")               # pip install get-n00dles[otel]
 ```
 
-## What's in this release (v0.1.0)
+**Parallel execution** runs agents concurrently with `|` or `parallel()`. The next
+step receives a dict keyed by each member's function name — match your downstream
+agent's parameter names to those keys and there's no manual merging:
 
-This is the first OSS release — sequential composition only. Implemented:
+```python
+from n00dles import parallel
+
+@agent(model="gpt-4o")
+def scrape_news(query: str) -> str: """Scrape latest news."""
+
+@agent(model="gpt-4o")
+def scrape_twitter(query: str) -> str: """Pull recent posts."""
+
+@agent(model="claude-sonnet-4-6")
+def merge_signals(scrape_news: str, scrape_twitter: str) -> str:
+    """Merge and rank both signals."""
+
+intel = pipeline(parallel(scrape_news, scrape_twitter) >> merge_signals, timeout=20)
+result = run(intel, query="AI regulation 2026")
+```
+
+`parallel(*agents, max_concurrency=None)` caps how many run at once; without it,
+every member runs simultaneously.
+
+**Conditional routing** sends execution to exactly one agent with `branch()`, based
+on a key read off the previous step's output — the string itself if it's plain
+`str`, or the `category` field if it's a `dict` or Pydantic model:
+
+```python
+from n00dles import branch
+
+triage = pipeline(classify >> branch(billing=handle_billing, support=handle_support, default=handle_support))
+result = run(triage, ticket="My invoice is wrong")
+```
+
+An unmatched key with no `default` raises `BranchError`.
+
+## What's in this release (v0.2.0)
 
 - `@agent`, `pipeline()`, `>>`, `run()`/`arun()`
+- `parallel()` / `branch()` / the `|` operator for fan-out and conditional routing
 - litellm provider integration (every major LLM provider)
 - Retry with exponential backoff + jitter, per-node timeouts, fallback agents
-- SQLite state store (default) with checkpoint-and-resume
+- SQLite state store (default) with checkpoint-and-resume (including partial-resume
+  for parallel groups)
 - Pydantic I/O validation for structured agent outputs
 - Trace events + an optional OpenTelemetry exporter (`pip install get-n00dles[otel]`)
 
 **Not yet implemented** (tracked for the next release — see `PUBLISHING.md` for the
 full rollout plan):
 
-- `parallel()` / `branch()` / the `|` operator for fan-out and conditional routing
 - Circuit breaker
 - Redis state backend
 - Langfuse and Helicone exporters

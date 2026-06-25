@@ -21,23 +21,34 @@ import uuid
 from typing import Any
 
 from .core.agent import AgentNode, agent
-from .core.context import AgentOutputError, AgentTrace, PipelineContext, PipelineFailure, RunResult
+from .core.context import (
+    AgentOutputError,
+    AgentTrace,
+    BranchError,
+    PipelineContext,
+    PipelineFailure,
+    RunResult,
+)
 from .core.executor import PipelineExecutor
-from .core.pipeline import Pipeline, pipeline
+from .core.pipeline import BranchAgent, ParallelGroup, Pipeline, branch, parallel, pipeline
 from .core.retry import RetryPolicy
 from .core.state import InMemoryStateStore, SQLiteStateStore, StateStore
 from .telemetry.tracer import Tracer
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 __all__ = [
     "agent",
     "pipeline",
+    "parallel",
+    "branch",
     "run",
     "arun",
     "configure",
     "AgentNode",
     "Pipeline",
+    "ParallelGroup",
+    "BranchAgent",
     "RunResult",
     "AgentTrace",
     "PipelineContext",
@@ -47,6 +58,7 @@ __all__ = [
     "InMemoryStateStore",
     "PipelineFailure",
     "AgentOutputError",
+    "BranchError",
     "Tracer",
 ]
 
@@ -121,7 +133,7 @@ def configure(
 
 
 async def arun(
-    target: AgentNode | Pipeline,
+    target: AgentNode | ParallelGroup | BranchAgent | Pipeline,
     *,
     timeout: float | None = None,
     tags: list[str] | None = None,
@@ -129,12 +141,12 @@ async def arun(
 ) -> RunResult:
     """Async entrypoint. Use this directly if you're already inside an event loop
     (FastAPI handlers, Jupyter, etc.) — `run()` cannot be called there."""
-    if isinstance(target, AgentNode):
+    if isinstance(target, (AgentNode, ParallelGroup, BranchAgent)):
         target = pipeline(target, timeout=timeout if timeout is not None else 60.0)
     elif not isinstance(target, Pipeline):
         raise TypeError(
-            "run()/arun() expects an @agent-decorated function or a pipeline(...), "
-            f"got {type(target)!r}"
+            "run()/arun() expects an @agent-decorated function, parallel()/branch(), "
+            f"or a pipeline(...), got {type(target)!r}"
         )
 
     run_id = str(uuid.uuid4())
@@ -145,7 +157,7 @@ async def arun(
 
 
 def run(
-    target: AgentNode | Pipeline,
+    target: AgentNode | ParallelGroup | BranchAgent | Pipeline,
     *,
     timeout: float | None = None,
     tags: list[str] | None = None,

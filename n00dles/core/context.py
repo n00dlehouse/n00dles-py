@@ -59,6 +59,16 @@ class AgentOutputError(Exception):
         super().__init__(f"{agent_name}: output failed validation against return type: {cause}")
 
 
+class BranchError(Exception):
+    """Raised by branch() when the routing key matches none of its routes and no
+    default agent was given."""
+
+    def __init__(self, branch_name: str, key: Any):
+        self.branch_name = branch_name
+        self.key = key
+        super().__init__(f"{branch_name}: no route for key {key!r} and no default agent set")
+
+
 @dataclass
 class PipelineContext:
     """Per-run state: inputs plus the output of every completed node, checkpointed
