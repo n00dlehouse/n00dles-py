@@ -2,28 +2,43 @@
 
 Concrete steps for getting this package onto PyPI, reserving the npm name for later,
 deciding where the SDK/docs live, and the specific distribution playbook for getting
-the first wave of developer adoption. None of the steps below have been run yet —
-this repo has not been pushed to GitHub or published anywhere.
+the first wave of developer adoption.
 
 ## 1. PyPI (the actual package)
 
-Name availability was checked before committing to it: `pypi.org/pypi/n00dles/json`
-returns 404 — `n00dles` is unclaimed.
+The bare name `n00dles` was unclaimed but PyPI's typosquat-prevention check rejected
+it on upload as "too similar to an existing project" — there's already a `noodles`
+package (a workflow engine), and PyPI treats `0`/`o` as confusable characters. The
+distribution name is **`get-n00dles`** instead (checked unclaimed via
+`pypi.org/pypi/get-n00dles/json` → 404). The Python import is unaffected either way —
+it's still `import n00dles`; only `pip install get-n00dles` differs from what you'd
+guess.
 
-**One-time setup — PyPI Trusted Publishing (no API tokens to manage or leak):**
+**v0.1.0 was published manually** using a PyPI API token (`__token__` / token from
+`.env`, never committed — see `.gitignore`) via `twine upload`. That's fine for a
+one-off, but every future release re-doing that manual token dance doesn't scale and
+keeps a long-lived token sitting in a local `.env`. Switch to CI-driven publishing
+via a **pending trusted publisher** (no API tokens at all, ever — PyPI lets you
+register a trusted publisher for a project that already exists, same flow):
 
-1. Push this repo to `github.com/n00dlehouse/n00dles`.
-2. Create the project on PyPI once manually (Trusted Publishing requires the project
-   to exist first): `pip install build twine && python -m build && twine upload dist/*`
-   using a PyPI API token for this one bootstrap upload only.
-3. On the PyPI project page → *Publishing* → add a trusted publisher: GitHub repo
-   `n00dlehouse/n00dles`, workflow `publish.yml`, environment `pypi`.
-4. Add a `publish.yml` workflow (separate from `ci.yml`) that runs on tag push
-   (`v*`), builds with `python -m build`, and uploads via
+1. Log into [pypi.org](https://pypi.org) with whichever account currently owns the
+   `get-n00dles` project (the one whose token was used for the manual v0.1.0 upload).
+2. On the project page → **Publishing** → "Add a new publisher":
+   - Owner: `n00dlehouse`
+   - Repository: `n00dles-py`
+   - Workflow filename: `publish.yml`
+   - Environment name: `pypi`
+3. `.github/workflows/publish.yml` (in this repo) runs on tag push (`v*`), builds with
+   `python -m build`, and uploads via
    [`pypa/gh-action-pypi-publish`](https://github.com/pypa/gh-action-pypi-publish) —
-   no secret token needed once trusted publishing is configured.
-5. From then on: bump `version` in `pyproject.toml`, tag (`git tag v0.1.0 && git push --tags`),
-   CI publishes automatically.
+   no secret token in GitHub at all once the trusted publisher is registered; trust is
+   established via OIDC between GitHub Actions and PyPI directly.
+4. To ship a release from then on: bump `version` in `pyproject.toml`, commit, then
+   `git tag v0.1.1 && git push origin v0.1.1`. The workflow builds and publishes
+   automatically — no token, no manual `twine upload`.
+5. Once the trusted publisher is registered and confirmed working, delete the API
+   token from PyPI account settings (**pypi.org/manage/account/token/**) and from the
+   local `.env` — it no longer needs to exist.
 
 **Before the first real publish:**
 
@@ -68,9 +83,9 @@ Marketing spend doesn't substitute for that — sequencing matters:
 
 **Before posting anywhere:**
 - Tag a real `v0.1.0` release with release notes (GitHub Releases, not just a git tag).
-- Make sure `pip install n00dles` → quickstart → first pipeline genuinely takes under
-  5 minutes, copy-paste, no surprises. This is the thing being advertised — it has to
-  actually be true.
+- Make sure `pip install get-n00dles` → quickstart → first pipeline genuinely takes
+  under 5 minutes, copy-paste, no surprises. This is the thing being advertised — it
+  has to actually be true.
 - Seed the repo with 5-10 GitHub issues labeled `good first issue` so the first wave
   of interested contributors has something concrete to do.
 

@@ -22,8 +22,11 @@ print(result.output)
 ## Install
 
 ```bash
-pip install n00dles
+pip install get-n00dles
 ```
+
+(the PyPI distribution name is `get-n00dles` — PyPI rejected the bare `n00dles` as
+too visually similar to an existing package; the import is still `import n00dles`)
 
 Set an API key for whichever provider you're using (n00dles wraps
 [litellm](https://github.com/BerriAI/litellm), so any provider litellm supports works
@@ -82,7 +85,7 @@ the LLM to respond in JSON and validates the response against your schema, raisi
 from n00dles import configure
 
 configure(state_store="sqlite:///my_app.db")   # custom path (default: ./n00dles_state.db)
-configure(trace_exporter="otel")               # pip install n00dles[otel]
+configure(trace_exporter="otel")               # pip install get-n00dles[otel]
 ```
 
 ## What's in this release (v0.1.0)
@@ -94,7 +97,7 @@ This is the first OSS release — sequential composition only. Implemented:
 - Retry with exponential backoff + jitter, per-node timeouts, fallback agents
 - SQLite state store (default) with checkpoint-and-resume
 - Pydantic I/O validation for structured agent outputs
-- Trace events + an optional OpenTelemetry exporter (`pip install n00dles[otel]`)
+- Trace events + an optional OpenTelemetry exporter (`pip install get-n00dles[otel]`)
 
 **Not yet implemented** (tracked for the next release — see `PUBLISHING.md` for the
 full rollout plan):
@@ -109,8 +112,8 @@ full rollout plan):
 ## Development
 
 ```bash
-git clone https://github.com/n00dlehouse/n00dles
-cd n00dles
+git clone https://github.com/n00dlehouse/n00dles-py
+cd n00dles-py
 pip install -e ".[dev]"
 pytest
 ruff check .
