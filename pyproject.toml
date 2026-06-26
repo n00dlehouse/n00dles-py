@@ -7,7 +7,7 @@ build-backend = "hatchling.build"
 # ("noodles", a workflow engine) under its typosquat-prevention check. This only
 # affects the install/distribution name — the import stays `import n00dles`.
 name = "get-n00dles"
-version = "0.2.0"
+version = "0.3.0"
 description = "Open-source multi-agent AI orchestration. Chain agents, manage state, handle failures — without 800 lines of boilerplate."
 readme = "README.md"
 license = "MIT"

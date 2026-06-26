@@ -35,7 +35,7 @@ from .core.retry import RetryPolicy
 from .core.state import InMemoryStateStore, SQLiteStateStore, StateStore
 from .telemetry.tracer import Tracer
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 
 __all__ = [
     "agent",

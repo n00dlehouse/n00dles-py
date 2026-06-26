@@ -127,10 +127,41 @@ result = run(triage, ticket="My invoice is wrong")
 
 An unmatched key with no `default` raises `BranchError`.
 
-## What's in this release (v0.2.0)
+**Testing** — `mock_agent()` swaps one agent's LLM call for a fixed return value (or
+exception), no network call or API key needed:
+
+```python
+from n00dles.testing import mock_agent
+
+def test_writer_uses_research():
+    with mock_agent(researcher, returns="fact 1, fact 2, fact 3"):
+        result = run(content_pipeline, topic="test topic")
+    assert "fact 1" in result.output
+```
+
+`mock_pipeline()` does the same for an entire pipeline at once, for tests that only
+care what calls it, not what it does internally:
+
+```python
+from n00dles.testing import mock_pipeline
+
+def test_endpoint_calls_pipeline():
+    with mock_pipeline(content_pipeline, returns="mocked article"):
+        response = client.post("/generate", json={"topic": "x"})
+    assert response.status_code == 200
+```
+
+Both work as decorators too — `@mock_agent(researcher, returns=...)` on a test
+function — if you'd rather not nest a `with` block. A `returns` value is validated
+against the agent's declared type the same way a real response would be; a `raises`
+exception goes through the agent's normal retry/fallback handling, so you can test
+those paths without queuing fake provider failures.
+
+## What's in this release (v0.3.0)
 
 - `@agent`, `pipeline()`, `>>`, `run()`/`arun()`
 - `parallel()` / `branch()` / the `|` operator for fan-out and conditional routing
+- `mock_agent()` / `mock_pipeline()` testing utilities — no network calls in tests
 - litellm provider integration (every major LLM provider)
 - Retry with exponential backoff + jitter, per-node timeouts, fallback agents
 - SQLite state store (default) with checkpoint-and-resume (including partial-resume
@@ -144,7 +175,6 @@ full rollout plan):
 - Circuit breaker
 - Redis state backend
 - Langfuse and Helicone exporters
-- `mock_agent()` / `MockLLM` testing utilities
 - The `noodles` CLI (`run`, `serve`, `deploy`)
 
 ## Development
